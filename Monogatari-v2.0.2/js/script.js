@@ -256,6 +256,19 @@ monogatari.storage({
   cohere_murder_response: "",
 });
 
+function removeAfterLastOccurrence(str, substring) {
+	// Find the last occurrence of the substring
+	const lastIndex = str.lastIndexOf(substring);
+  
+	// If the substring is not found, return the original string
+	if (lastIndex === -1) {
+	  return str;
+	}
+  
+	// Remove everything after the last occurrence of the substring
+	return str.substring(0, lastIndex + substring.length);
+  }
+  
 function constructMurderPrompt(target, history, reasoning) {
   // Initialize the story string with the initial setting
   let prompt = `Give this setting ${GAME_DATA.initialSetting}\n`;
@@ -279,7 +292,7 @@ function constructMurderPrompt(target, history, reasoning) {
   // Add the detective's question
   prompt += `The Detective's reasoning for ${full_investigated_name} murdering Sanders is ${reasoning}`;
 
-  prompt += `Summarize why he is correct or incorrect.`;
+  prompt += `Summarize why the detective is correct or incorrect.`;
   return prompt;
 }
 function makeCohereMurderRequest() {
@@ -300,7 +313,7 @@ function makeCohereMurderRequest() {
   cohere_response = coherePostRequest(cohere_prompt);
   cohere_response = removeAfterSubstring(cohere_response, "Detective:");
   cohere_response = removeAfterSubstring(cohere_response, "detective:");
-
+  cohere_response = removeAfterLastOccurrence(cohere_response, ".")
   console.log(cohere_prompt, cohere_response);
   monogatari
     .storage()
@@ -373,7 +386,7 @@ function makeCohereRequest() {
   cohere_response = removeAfterSubstring(cohere_response, "\n");
   cohere_response = removeAfterSubstring(cohere_response, "Detective:");
   cohere_response = removeAfterSubstring(cohere_response, "detective:");
-
+  cohere_response = removeAfterLastOccurrence(cohere_response, ".")
   console.log(cohere_prompt, cohere_response);
   monogatari
     .storage()
@@ -423,7 +436,8 @@ monogatari.script({
   Start: [
     "show scene inn with fadeIn",
     "show character narrator main",
-    "narrator Hi {{player.name}} Welcome to Murder Vacation!",
+    "narrator Hi Welcome to Murder Vacation!",
+    "narrator Let's meet our supec..I mean cast!",
     "hide character narrator",
     "show character anya main",
     "anya Anya is an older maid who handles the managing of Sofia and Hakim",
