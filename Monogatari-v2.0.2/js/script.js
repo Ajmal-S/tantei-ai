@@ -90,7 +90,7 @@ function coherePostRequest(context) {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.setRequestHeader("Authorization", "Bearer " + COHERE_API_KEY);
     const payload = {
-      max_tokens: 129,
+      max_tokens: 120,
       truncate: "END",
       return_likelihoods: "NONE",
       prompt: context,
@@ -250,7 +250,73 @@ monogatari.storage({
     anthonyAKAliam: [],
   },
   current_investigated_character: "narrator",
+  selected_murderer: "narrator",
+  selected_murderer_full_name: "narrator",
+  murder_justification: "",
+  cohere_murder_response: "",
 });
+
+function constructMurderPrompt(target, history, reasoning) {
+  // Initialize the story string with the initial setting
+  let prompt = `Give this setting ${GAME_DATA.initialSetting}\n`;
+
+  full_investigated_name = monogatari.characters()[target].name;
+
+  // Add the detective's investigation target
+  prompt += `The detective is investigating by talking to ${full_investigated_name}\n`;
+
+  // Add the current information regarding the target
+  prompt += `This is the current information regarding ${GAME_DATA[target]}\n`;
+
+  // Simulate a conversation between the target and the detective
+  prompt += `The following is a conversation between ${full_investigated_name} the detective:\n`;
+
+  // Iterate over the history to add previous dialogues
+  for (let i = 0; i < history.length; i++) {
+    prompt += `${history[i]}\n`;
+  }
+
+  // Add the detective's question
+  prompt += `The Detective's reasoning for ${full_investigated_name} murdering Sanders is ${reasoning}`;
+
+  prompt += `Summarize why he is correct or incorrect.`;
+  return prompt;
+}
+function makeCohereMurderRequest() {
+  // alert('This is pretty useful!');
+  // alert(monogatari.storage().player.intelligence)
+  murder_justification = monogatari.storage().murder_justification;
+  selected_murderer = monogatari.storage().selected_murderer;
+  chat_history = monogatari.storage().character_chat_log[selected_murderer];
+  console.log(murder_justification);
+  console.log(selected_murderer);
+  console.log(chat_history)
+  cohere_prompt = constructMurderPrompt(
+    selected_murderer,
+    chat_history,
+    murder_justification
+  );
+  console.log(cohere_prompt);
+  cohere_response = coherePostRequest(cohere_prompt);
+  cohere_response = removeAfterSubstring(cohere_response, "Detective:");
+  cohere_response = removeAfterSubstring(cohere_response, "detective:");
+
+  console.log(cohere_prompt, cohere_response);
+  monogatari
+    .storage()
+    .character_chat_log[current_investigated_character].push(
+      "Detective: " + player_response
+    );
+  monogatari
+    .storage()
+    .character_chat_log[current_investigated_character].push(
+      full_investigated_name + ": " + cohere_response
+    );
+  monogatari.storage().cohere_murder_response = cohere_response;
+  console.log(cohere_response);
+  // alert(cohere_response);
+  return true;
+}
 
 function constructPrompt(target, history, question) {
   // Initialize the story string with the initial setting
@@ -330,6 +396,11 @@ async function asyncSendAlert() {
 function onInvestigateChosen(character) {
   monogatari.storage().current_investigated_character = character;
 }
+function onMurderSelected(character) {
+  full_investigated_name = monogatari.characters()[character].name;
+  monogatari.storage().selected_murderer_full_name = full_investigated_name;
+  monogatari.storage().selected_murderer = character
+}
 
 function checkIfFirstMessage() {
   current_investigated_character =
@@ -378,7 +449,7 @@ monogatari.script({
     "narrator The next morning you are woken up by a scream",
     "narrator You quickly head towards it and see the maid Anya backing away from the master bedroom.",
     "narrator You discover the dead body of the colonel staring at the sky and surmise he has been dead for a few hours.",
-	"narrator There is, suspiciously, a glass besides his desk that looked like it had liquor in it and some liquor splatttered on the floor.",
+    "narrator There is, suspiciously, a glass besides his desk that looked like it had liquor in it and some liquor splatttered on the floor.",
     "narrator You round up every member at the inn and then question them individually attempting to uncover the truth behind the issue before the local police arrive.",
     "jump investigateChoice",
   ],
@@ -472,6 +543,66 @@ monogatari.script({
   MakeFinalGuess: [
     "show character narrator main",
     "narrator So you finally figured it out. Who is it?",
+    {
+      Choice: {
+        Dialog: "narrator Who murdered colonel Sanders?",
+        Anya: {
+          Text: "Anya",
+          onChosen: function () {
+            onMurderSelected("anya");
+          },
+          Do: "next",
+        },
+        Hakim: {
+          Text: "Hakim",
+          onChosen: function () {
+            onMurderSelected("hakim");
+          },
+          Do: "next",
+        },
+        James: {
+          Text: "James",
+          onChosen: function () {
+            onMurderSelected("james");
+          },
+          Do: "next",
+        },
+        Sofia: {
+          Text: "Sofia",
+          onChosen: function () {
+            onMurderSelected("sofia");
+          },
+          Do: "next",
+        },
+        William: {
+          Text: "William",
+          onChosen: function () {
+            onMurderSelected("william");
+          },
+          Do: "next",
+        },
+        AnthonyAKAliam: {
+          Text: "Anthony",
+          onChosen: function () {
+            onMurderSelected("anthonyAKAliam");
+          },
+          Do: "next",
+        },
+      },
+    },
+    "narrator so you think {{selected_murderer_full_name}} killed him..",
+    "narrator how did you arrive at that conclusion?",
+    {
+      Input: {
+        Text: "Piece together the clues and summarize why {{selected_murderer_full_name}} murdered colonel Sanders?",
+        Save: function (input) {
+          monogatari.storage().murder_justification = input;
+          return true;
+        },
+      },
+    },
+    makeCohereMurderRequest,
+    "narrator {{cohere_murder_response}}",
     "end",
   ],
 });
