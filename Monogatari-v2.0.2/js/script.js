@@ -370,6 +370,7 @@ function makeCohereRequest() {
   );
   console.log(cohere_prompt);
   cohere_response = coherePostRequest(cohere_prompt);
+  cohere_response = removeAfterSubstring(cohere_response, "\n");
   cohere_response = removeAfterSubstring(cohere_response, "Detective:");
   cohere_response = removeAfterSubstring(cohere_response, "detective:");
 
@@ -422,7 +423,7 @@ monogatari.script({
   Start: [
     "show scene inn with fadeIn",
     "show character narrator main",
-    "narrator Hi {{player.name}} Welcome to Monogatari!",
+    "narrator Hi {{player.name}} Welcome to Murder Vacation!",
     "hide character narrator",
     "show character anya main",
     "anya Anya is an older maid who handles the managing of Sofia and Hakim",
@@ -541,6 +542,7 @@ monogatari.script({
     "jump InvestigateLoop",
   ],
   MakeFinalGuess: [
+	"hide character {{current_investigated_character}}",
     "show character narrator main",
     "narrator So you finally figured it out. Who is it?",
     {
@@ -603,6 +605,7 @@ monogatari.script({
     },
     makeCohereMurderRequest,
     "narrator {{cohere_murder_response}}",
+	"narrator Thank you for playing Murder Vacation",
     "end",
   ],
 });
