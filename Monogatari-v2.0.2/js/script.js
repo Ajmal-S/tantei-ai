@@ -1,5 +1,5 @@
 /* global monogatari */
-let COHERE_API_KEY = "6eMUUH6enfvEKAdXQLlKR9lgRAJ5gwRnKy8o6i09";
+let COHERE_API_KEY = "";
 // Define the messages used in the game.
 // async function asynchttpPost(context) {
 //   try {
